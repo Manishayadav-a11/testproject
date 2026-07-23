@@ -6,25 +6,31 @@ import toast from 'react-hot-toast';
 
 export default function ReviewCreate() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ rating: 0, title: '', comment: '', course: '', institute: '' });
-  const [courses, setCourses] = useState([]);
-  const [institutes, setInstitutes] = useState([]);
+  const [form, setForm] = useState({ booking: '', rating: 0, comment: '', institute_rating: 0, instructor_rating: 0, course_rating: 0 });
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    client.get('/courses/').then((r) => setCourses(r.data?.results || r.data || [])).catch(() => {});
-    client.get('/institutes/').then((r) => setInstitutes(r.data?.results || r.data || [])).catch(() => {});
+    client.get('/bookings/').then((r) => {
+      const all = Array.isArray(r.data) ? r.data : r.data?.results || [];
+      setBookings(all.filter((b) => b.status === 'completed'));
+    }).catch(() => {});
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.rating === 0) { toast.error('Please select a rating'); return; }
+    if (!form.booking) { toast.error('Please select a booking'); return; }
     setLoading(true);
     try {
       await client.post('/reviews/create/', form);
       toast.success('Review submitted!');
       navigate('/reviews');
-    } catch (err) { toast.error(err.response?.data?.error || 'Failed to submit review'); } finally { setLoading(false); }
+    } catch (err) {
+      const data = err.response?.data;
+      const msg = typeof data === 'object' ? Object.values(data).flat().join(', ') : 'Failed to submit review';
+      toast.error(msg);
+    } finally { setLoading(false); }
   };
 
   return (
@@ -33,31 +39,33 @@ export default function ReviewCreate() {
       <div className="card">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="label">Rating *</label>
-            <StarRating rating={form.rating} onChange={(r) => setForm({ ...form, rating: r })} size={28} />
+            <label className="label">Completed Booking *</label>
+            <select value={form.booking} onChange={(e) => setForm({ ...form, booking: e.target.value })} className="input-field" required>
+              <option value="">Select a completed booking</option>
+              {bookings.map((b) => <option key={b.id} value={b.id}>Booking #{b.id} - {b.course?.name || 'Course'}</option>)}
+            </select>
+            {bookings.length === 0 && <p className="text-sm text-gray-500 mt-1">No completed bookings available for review.</p>}
           </div>
           <div>
-            <label className="label">Title</label>
-            <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input-field" placeholder="Sum up your experience" />
+            <label className="label">Overall Rating *</label>
+            <StarRating rating={form.rating} onChange={(r) => setForm({ ...form, rating: r })} size={28} />
           </div>
           <div>
             <label className="label">Review *</label>
             <textarea value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} className="input-field" rows={4} required placeholder="Share your experience..." />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="label">Course (optional)</label>
-              <select value={form.course} onChange={(e) => setForm({ ...form, course: e.target.value })} className="input-field">
-                <option value="">Select course</option>
-                {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <label className="label">Institute Rating</label>
+              <StarRating rating={form.institute_rating} onChange={(r) => setForm({ ...form, institute_rating: r })} size={20} />
             </div>
             <div>
-              <label className="label">Institute (optional)</label>
-              <select value={form.institute} onChange={(e) => setForm({ ...form, institute: e.target.value })} className="input-field">
-                <option value="">Select institute</option>
-                {institutes.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-              </select>
+              <label className="label">Instructor Rating</label>
+              <StarRating rating={form.instructor_rating} onChange={(r) => setForm({ ...form, instructor_rating: r })} size={20} />
+            </div>
+            <div>
+              <label className="label">Course Rating</label>
+              <StarRating rating={form.course_rating} onChange={(r) => setForm({ ...form, course_rating: r })} size={20} />
             </div>
           </div>
           <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Submitting...' : 'Submit Review'}</button>

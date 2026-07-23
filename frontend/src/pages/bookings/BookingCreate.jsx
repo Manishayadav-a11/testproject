@@ -7,13 +7,29 @@ export default function BookingCreate() {
   const navigate = useNavigate();
   const location = useLocation();
   const prefill = location.state || {};
-  const [form, setForm] = useState({ course: prefill.courseId || '', preferred_date: '', preferred_time: '', notes: '' });
+  const [form, setForm] = useState({
+    course: prefill.courseId || '',
+    branch: '',
+    booking_date: '',
+    preferred_time_slot: '',
+    instructor: '',
+    special_requests: '',
+  });
   const [courses, setCourses] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    client.get('/courses/').then((r) => setCourses(r.data?.results || r.data || [])).catch(() => {});
+    client.get('/courses/').then((r) => setCourses(Array.isArray(r.data) ? r.data : r.data?.results || [])).catch(() => {});
+    client.get('/branches/').then((r) => setBranches(Array.isArray(r.data) ? r.data : r.data?.results || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (form.branch) {
+      client.get(`/branches/${form.branch}/instructors/`).then((r) => setInstructors(Array.isArray(r.data) ? r.data : r.data?.results || [])).catch(() => {});
+    }
+  }, [form.branch]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -25,7 +41,9 @@ export default function BookingCreate() {
       toast.success('Booking created!');
       navigate('/bookings');
     } catch (err) {
-      toast.error(err.response?.data?.error || err.response?.data?.detail || 'Failed to create booking');
+      const data = err.response?.data;
+      const msg = typeof data === 'object' ? Object.values(data).flat().join(', ') : 'Failed to create booking';
+      toast.error(msg);
     } finally { setLoading(false); }
   };
 
@@ -38,14 +56,30 @@ export default function BookingCreate() {
             <label className="label">Course *</label>
             <select name="course" value={form.course} onChange={handleChange} className="input-field" required>
               <option value="">Select a course</option>
-              {courses.map((c) => <option key={c.id} value={c.id}>{c.name} - ₹{c.price} ({c.institute?.name})</option>)}
+              {courses.map((c) => <option key={c.id} value={c.id}>{c.name} - ₹{c.price}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Branch *</label>
+            <select name="branch" value={form.branch} onChange={handleChange} className="input-field" required>
+              <option value="">Select a branch</option>
+              {branches.map((b) => <option key={b.id} value={b.id}>{b.name} - {b.city?.name || b.address || ''}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="label">Preferred Date *</label><input type="date" name="preferred_date" value={form.preferred_date} onChange={handleChange} className="input-field" required /></div>
-            <div><label className="label">Preferred Time</label><input type="time" name="preferred_time" value={form.preferred_time} onChange={handleChange} className="input-field" /></div>
+            <div><label className="label">Booking Date *</label><input type="date" name="booking_date" value={form.booking_date} onChange={handleChange} className="input-field" required min={new Date().toISOString().split('T')[0]} /></div>
+            <div><label className="label">Preferred Time Slot</label><input type="time" name="preferred_time_slot" value={form.preferred_time_slot} onChange={handleChange} className="input-field" /></div>
           </div>
-          <div><label className="label">Notes</label><textarea name="notes" value={form.notes} onChange={handleChange} className="input-field" rows={3} placeholder="Any special requests..." /></div>
+          {instructors.length > 0 && (
+            <div>
+              <label className="label">Preferred Instructor</label>
+              <select name="instructor" value={form.instructor} onChange={handleChange} className="input-field">
+                <option value="">No preference</option>
+                {instructors.map((i) => <option key={i.id} value={i.id}>{i.user?.first_name} {i.user?.last_name}</option>)}
+              </select>
+            </div>
+          )}
+          <div><label className="label">Special Requests</label><textarea name="special_requests" value={form.special_requests} onChange={handleChange} className="input-field" rows={3} placeholder="Any special requests..." /></div>
           <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Creating...' : 'Create Booking'}</button>
         </form>
       </div>

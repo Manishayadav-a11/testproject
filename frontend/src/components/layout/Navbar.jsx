@@ -13,6 +13,7 @@ export default function Navbar() {
     await logout();
     navigate('/');
     setProfileOpen(false);
+    setMobileOpen(false);
   };
 
   const dashboardPath = {
@@ -21,6 +22,9 @@ export default function Navbar() {
     instructor: '/dashboard/institute',
     student: '/dashboard/student',
   };
+
+  const isOwner = user?.role === 'institute_owner' || user?.role === 'instructor';
+  const isAdmin = user?.role === 'admin';
 
   return (
     <nav className="bg-white shadow-sm border-b sticky top-0 z-40">
@@ -38,6 +42,13 @@ export default function Navbar() {
               <>
                 <Link to="/bookings" className="text-gray-600 hover:text-primary-600 font-medium">Bookings</Link>
                 <Link to="/reviews" className="text-gray-600 hover:text-primary-600 font-medium">Reviews</Link>
+                {isOwner && (
+                  <>
+                    <Link to="/branches" className="text-gray-600 hover:text-primary-600 font-medium">Branches</Link>
+                    <Link to="/instructors" className="text-gray-600 hover:text-primary-600 font-medium">Instructors</Link>
+                    <Link to="/vehicles" className="text-gray-600 hover:text-primary-600 font-medium">Vehicles</Link>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -56,7 +67,11 @@ export default function Navbar() {
                   <ChevronDown size={16} />
                 </button>
                 {profileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-1">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border py-1">
+                    <div className="px-4 py-2 border-b">
+                      <p className="text-sm font-medium">{user.first_name} {user.last_name}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
                     <Link
                       to={dashboardPath[user.role] || '/profile'}
                       onClick={() => setProfileOpen(false)}
@@ -71,6 +86,13 @@ export default function Navbar() {
                     >
                       <User size={16} /> Profile
                     </Link>
+                    {isOwner && (
+                      <>
+                        <Link to="/institutes/create" onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">New Institute</Link>
+                        <Link to="/courses/create" onClick={() => setProfileOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">New Course</Link>
+                      </>
+                    )}
+                    <hr className="my-1" />
                     <button
                       onClick={handleLogout}
                       className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50 w-full"
@@ -103,6 +125,14 @@ export default function Navbar() {
               <>
                 <Link to="/bookings" onClick={() => setMobileOpen(false)} className="block py-2 text-gray-600 hover:text-primary-600">Bookings</Link>
                 <Link to="/reviews" onClick={() => setMobileOpen(false)} className="block py-2 text-gray-600 hover:text-primary-600">Reviews</Link>
+                <Link to="/payments" onClick={() => setMobileOpen(false)} className="block py-2 text-gray-600 hover:text-primary-600">Payments</Link>
+                {isOwner && (
+                  <>
+                    <Link to="/branches" onClick={() => setMobileOpen(false)} className="block py-2 text-gray-600 hover:text-primary-600">Branches</Link>
+                    <Link to="/instructors" onClick={() => setMobileOpen(false)} className="block py-2 text-gray-600 hover:text-primary-600">Instructors</Link>
+                    <Link to="/vehicles" onClick={() => setMobileOpen(false)} className="block py-2 text-gray-600 hover:text-primary-600">Vehicles</Link>
+                  </>
+                )}
                 <Link to="/profile" onClick={() => setMobileOpen(false)} className="block py-2 text-gray-600 hover:text-primary-600">Profile</Link>
                 <button onClick={handleLogout} className="block py-2 text-red-600">Logout</button>
               </>

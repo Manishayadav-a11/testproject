@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, Star, Phone, Mail, Clock, BookOpen, ChevronRight } from 'lucide-react';
+import { MapPin, Star, Phone, Mail } from 'lucide-react';
 import client from '../../api/client';
 import StarRating from '../../components/ui/StarRating';
 
@@ -22,8 +22,8 @@ export default function InstituteDetail() {
           client.get(`/institute-reviews/${id}/`).catch(() => ({ data: [] })),
         ]);
         setInstitute(instRes.data);
-        setBranches(branchRes.data?.results || branchRes.data || []);
-        setReviews(reviewRes.data?.results || reviewRes.data || []);
+        setBranches(Array.isArray(branchRes.data) ? branchRes.data : branchRes.data?.results || []);
+        setReviews(Array.isArray(reviewRes.data) ? reviewRes.data : reviewRes.data?.results || []);
       } catch {
         setInstitute(null);
       } finally {
@@ -35,7 +35,7 @@ export default function InstituteDetail() {
 
   useEffect(() => {
     if (branches.length > 0) {
-      client.get(`/branches/${branches[0].id}/courses/`).then((r) => setCourses(r.data?.results || r.data || [])).catch(() => {});
+      client.get(`/branches/${branches[0].id}/courses/`).then((r) => setCourses(Array.isArray(r.data) ? r.data : r.data?.results || [])).catch(() => {});
     }
   }, [branches]);
 
@@ -57,14 +57,17 @@ export default function InstituteDetail() {
           </div>
           <div className="flex-1">
             <h1 className="text-2xl font-bold mb-2">{institute.name}</h1>
-            <p className="text-gray-500 flex items-center gap-1 mb-2"><MapPin size={16} /> {institute.city}, {institute.state || 'India'}</p>
+            <p className="text-gray-500 flex items-center gap-1 mb-2"><MapPin size={16} /> {institute.city || 'India'}{institute.state ? `, ${institute.state}` : ''}</p>
             <div className="flex items-center gap-2 mb-3">
               <StarRating rating={institute.average_rating || 0} readonly size={18} />
-              <span className="text-sm text-gray-600">{institute.average_rating || 'N/A'} ({institute.review_count || 0} reviews)</span>
+              <span className="text-sm text-gray-600">{institute.average_rating || 'N/A'} ({institute.review_count || institute.total_reviews || 0} reviews)</span>
             </div>
             <p className="text-gray-600 mb-4">{institute.description || 'No description available.'}</p>
-            {institute.phone && <p className="text-sm text-gray-600 flex items-center gap-1"><Phone size={14} /> {institute.phone}</p>}
-            {institute.email && <p className="text-sm text-gray-600 flex items-center gap-1"><Mail size={14} /> {institute.email}</p>}
+            {institute.contact_phone && <p className="text-sm text-gray-600 flex items-center gap-1"><Phone size={14} /> {institute.contact_phone}</p>}
+            {institute.contact_email && <p className="text-sm text-gray-600 flex items-center gap-1"><Mail size={14} /> {institute.contact_email}</p>}
+            <span className={`inline-block mt-3 text-xs px-2 py-1 rounded-full ${institute.is_approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              {institute.is_approved ? 'Verified Institute' : 'Pending Approval'}
+            </span>
           </div>
         </div>
       </div>
@@ -82,7 +85,7 @@ export default function InstituteDetail() {
           {branches.length === 0 ? <p className="text-gray-500">No branches available.</p> : branches.map((b) => (
             <div key={b.id} className="card">
               <h3 className="font-semibold">{b.name}</h3>
-              <p className="text-sm text-gray-500 flex items-center gap-1 mt-1"><MapPin size={14} /> {b.address || b.city}</p>
+              <p className="text-sm text-gray-500 flex items-center gap-1 mt-1"><MapPin size={14} /> {b.address || b.city?.name || 'N/A'}</p>
               {b.phone && <p className="text-sm text-gray-500 flex items-center gap-1"><Phone size={14} /> {b.phone}</p>}
             </div>
           ))}
@@ -96,7 +99,7 @@ export default function InstituteDetail() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold text-lg hover:text-primary-600">{c.name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{c.vehicle_type} - {c.duration_hours || c.duration || 'N/A'} hours</p>
+                  <p className="text-sm text-gray-500 mt-1">{c.vehicle_type} - {c.duration_hours || 'N/A'} hours</p>
                   <p className="text-gray-600 text-sm mt-2">{c.description?.slice(0, 150)}...</p>
                 </div>
                 <div className="text-right">
@@ -114,7 +117,7 @@ export default function InstituteDetail() {
             <div key={r.id} className="card">
               <div className="flex items-center gap-2 mb-2">
                 <StarRating rating={r.rating} readonly size={16} />
-                <span className="text-sm font-medium">{r.user?.first_name || 'Anonymous'}</span>
+                <span className="text-sm font-medium">{r.student?.name || 'Anonymous'}</span>
                 <span className="text-xs text-gray-400">{r.created_at?.split('T')[0]}</span>
               </div>
               <p className="text-gray-600 text-sm">{r.comment}</p>

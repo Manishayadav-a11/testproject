@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import toast from 'react-hot-toast';
-import { User, Mail, Phone, MapPin, Save, Lock } from 'lucide-react';
+import { User, Save, Lock, Camera } from 'lucide-react';
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
   const [form, setForm] = useState({ first_name: '', last_name: '', phone: '', city: '', state: '', address: '', pincode: '' });
   const [pwForm, setPwForm] = useState({ old_password: '', new_password: '', new_password_confirm: '' });
+  const [profileImage, setProfileImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
 
@@ -19,14 +20,15 @@ export default function Profile() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await client.patch('/auth/profile/', form);
+      const fd = new FormData();
+      Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+      if (profileImage) fd.append('profile_image', profileImage);
+      const res = await client.patch('/auth/profile/', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       updateUser(res.data);
       toast.success('Profile updated!');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Update failed');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handlePasswordChange = async (e) => {
@@ -39,9 +41,7 @@ export default function Profile() {
     } catch (err) {
       const data = err.response?.data;
       toast.error(data?.error || data?.old_password || data?.new_password || 'Failed');
-    } finally {
-      setPwLoading(false);
-    }
+    } finally { setPwLoading(false); }
   };
 
   return (
@@ -50,7 +50,25 @@ export default function Profile() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="card">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><User size={20} /> Personal Info</h2>
-          <form onSubmit={handleProfileUpdate} className="space-y-4">
+          <form onSubmit={handleProfileUpdate} className="space-y-4" encType="multipart/form-data">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="relative">
+                {user?.profile_image ? (
+                  <img src={user.profile_image} alt="Profile" className="w-20 h-20 rounded-full object-cover" />
+                ) : (
+                  <div className="w-20 h-20 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-2xl font-bold">{user?.first_name?.[0]}{user?.last_name?.[0]}</div>
+                )}
+                <label className="absolute bottom-0 right-0 bg-primary-600 text-white p-1 rounded-full cursor-pointer hover:bg-primary-700">
+                  <Camera size={14} />
+                  <input type="file" accept="image/*" onChange={(e) => setProfileImage(e.target.files[0])} className="hidden" />
+                </label>
+              </div>
+              <div>
+                <p className="font-medium">{user?.first_name} {user?.last_name}</p>
+                <p className="text-sm text-gray-500">{user?.email}</p>
+                <p className="text-xs text-gray-400 capitalize">{user?.role?.replace('_', ' ')}</p>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div><label className="label">First Name</label><input type="text" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} className="input-field" /></div>
               <div><label className="label">Last Name</label><input type="text" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} className="input-field" /></div>
@@ -60,6 +78,7 @@ export default function Profile() {
             <div><label className="label">State</label><input type="text" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className="input-field" /></div>
             <div><label className="label">Address</label><textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="input-field" rows={3} /></div>
             <div><label className="label">Pincode</label><input type="text" value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })} className="input-field" /></div>
+            {profileImage && <p className="text-xs text-gray-500">New image: {profileImage.name}</p>}
             <button type="submit" disabled={loading} className="btn-primary flex items-center gap-2">
               <Save size={18} /> {loading ? 'Saving...' : 'Save Changes'}
             </button>
@@ -75,10 +94,6 @@ export default function Profile() {
               <Lock size={18} /> {pwLoading ? 'Changing...' : 'Change Password'}
             </button>
           </form>
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600"><strong>Email:</strong> {user?.email}</p>
-            <p className="text-sm text-gray-600 mt-1"><strong>Role:</strong> {user?.role?.replace('_', ' ')}</p>
-          </div>
         </div>
       </div>
     </div>

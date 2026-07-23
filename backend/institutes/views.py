@@ -8,6 +8,9 @@ from common.permissions import IsAdmin, IsAdminOrReadOnly, IsInstituteOwnerOrAdm
 
 
 def institute_to_dict(inst, detail=False):
+    first_branch = inst.branches.first() if hasattr(inst, 'branches') else None
+    city = first_branch.city.name if first_branch and first_branch.city else ''
+    state = first_branch.city.state.name if first_branch and first_branch.city and hasattr(first_branch.city, 'state') else ''
     d = {
         'id': inst.id,
         'name': inst.name,
@@ -15,8 +18,12 @@ def institute_to_dict(inst, detail=False):
         'logo': inst.logo.url if inst.logo else None,
         'contact_phone': inst.contact_phone,
         'status': inst.status,
+        'is_approved': inst.status == Institute.Status.APPROVED,
+        'city': city,
+        'state': state,
         'average_rating': float(inst.average_rating),
         'total_reviews': inst.total_reviews,
+        'review_count': inst.total_reviews,
         'is_featured': inst.is_featured,
         'created_at': inst.created_at.isoformat() if inst.created_at else None,
     }

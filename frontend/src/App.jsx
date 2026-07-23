@@ -17,8 +17,12 @@ import BookingCreate from './pages/bookings/BookingCreate';
 import BookingDetail from './pages/bookings/BookingDetail';
 import PaymentHistory from './pages/payments/PaymentHistory';
 import PaymentDetail from './pages/payments/PaymentDetail';
+import PaymentCreate from './pages/payments/PaymentCreate';
 import ReviewList from './pages/reviews/ReviewList';
 import ReviewCreate from './pages/reviews/ReviewCreate';
+import InstructorList from './pages/instructors/InstructorList';
+import VehicleList from './pages/vehicles/VehicleList';
+import BranchList from './pages/branches/BranchList';
 import StudentDashboard from './pages/student/StudentDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
@@ -43,9 +47,13 @@ export default function App() {
           <Route path="bookings/create" element={<BookingCreate />} />
           <Route path="bookings/:id" element={<BookingDetail />} />
           <Route path="payments" element={<PaymentHistory />} />
+          <Route path="payments/create" element={<PaymentCreate />} />
           <Route path="payments/:id" element={<PaymentDetail />} />
           <Route path="reviews" element={<ReviewList />} />
           <Route path="reviews/create" element={<ReviewCreate />} />
+          <Route path="instructors" element={<InstructorList />} />
+          <Route path="vehicles" element={<VehicleList />} />
+          <Route path="branches" element={<BranchList />} />
           <Route path="dashboard/student" element={<StudentDashboard />} />
           <Route path="dashboard/admin" element={<AdminDashboard />} />
         </Route>

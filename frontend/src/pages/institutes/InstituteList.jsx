@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, Star, Filter } from 'lucide-react';
+import { Search, MapPin, Star } from 'lucide-react';
 import client from '../../api/client';
 import Pagination from '../../components/ui/Pagination';
 
@@ -18,11 +18,10 @@ export default function InstituteList() {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (cityFilter) params.append('city', cityFilter);
-      params.append('page', page);
       const res = await client.get(`/institutes/?${params.toString()}`);
       const data = res.data;
-      setInstitutes(data.results || data || []);
-      setTotalPages(data.total_pages || Math.ceil((data.count || 0) / 12) || 1);
+      setInstitutes(Array.isArray(data) ? data : data.results || []);
+      setTotalPages(data.total_pages || Math.ceil((data.count || institutes.length || 0) / 12) || 1);
     } catch {
       setInstitutes([]);
     } finally {
@@ -71,7 +70,7 @@ export default function InstituteList() {
                   <div className="flex items-center gap-1 text-sm">
                     <Star size={14} className="fill-yellow-400 text-yellow-400" />
                     <span>{inst.average_rating || 'N/A'}</span>
-                    <span className="text-gray-400">({inst.review_count || 0})</span>
+                    <span className="text-gray-400">({inst.review_count || inst.total_reviews || 0})</span>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full ${inst.is_approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                     {inst.is_approved ? 'Verified' : 'Pending'}
