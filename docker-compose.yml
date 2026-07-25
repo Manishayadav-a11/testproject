@@ -46,6 +46,17 @@ services:
       - media_data:/app/media
       - static_data:/app/staticfiles
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: drivinghub_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
   nginx:
     image: nginx:alpine
     container_name: drivinghub_nginx
@@ -54,6 +65,7 @@ services:
       - "80:80"
     depends_on:
       - backend
+      - frontend
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       - media_data:/app/media:ro
