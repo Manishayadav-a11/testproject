@@ -17,7 +17,10 @@ COPY . .
 
 RUN chmod +x entrypoint.sh
 
-RUN adduser --disabled-password --gecos '' appuser
+RUN adduser --disabled-password --gecos '' appuser \
+    && mkdir -p /app/staticfiles /app/media \
+    && chown -R appuser:appuser /app
+
 USER appuser
 
 EXPOSE 8000
