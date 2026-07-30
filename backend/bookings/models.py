@@ -38,13 +38,14 @@ class Booking(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        unique_together = ['student', 'course', 'booking_date']
 
     def __str__(self):
         return f"Booking #{self.id} - {self.student.user.get_full_name()} - {self.course.name}"
 
     def save(self, *args, **kwargs):
-        if not self.total_amount:
+        if self.total_amount is None:
             self.total_amount = self.course.effective_price
-        if not self.final_amount:
+        if self.final_amount is None:
             self.final_amount = self.total_amount - self.discount_amount
         super().save(*args, **kwargs)

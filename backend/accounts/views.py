@@ -1,11 +1,15 @@
+import secrets
+import datetime
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -13,6 +17,8 @@ from common.permissions import IsAdmin
 from students.models import Student
 
 User = get_user_model()
+
+ALLOWED_REGISTRATION_ROLES = [User.Role.STUDENT, User.Role.INSTITUTE_OWNER]
 
 
 def user_to_dict(user):
@@ -56,6 +62,7 @@ def generate_tokens(user):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     def post(self, request):
         data = request.data
@@ -88,8 +95,8 @@ class RegisterView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({'email': 'A user with this email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if role not in dict(User.Role.choices):
-            return Response({'role': 'Invalid role.'}, status=status.HTTP_400_BAD_REQUEST)
+        if role not in ALLOWED_REGISTRATION_ROLES:
+            return Response({'role': 'You can only register as a student or institute owner.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             validate_password(password)
@@ -103,15 +110,20 @@ class RegisterView(APIView):
             username = f'{base_username}{counter}'
             counter += 1
 
-        user = User.objects.create(
+        user = User(
             username=username,
             email=email,
-            password=password,
             first_name=first_name,
             last_name=last_name,
             phone=phone,
             role=role,
         )
+        user.set_password(password)
+
+        email_token = secrets.token_urlsafe(32)
+        user.email_verification_token = email_token
+        user.email_verification_sent_at = timezone.now()
+        user.save()
 
         if role == User.Role.STUDENT:
             Student.objects.create(user=user)
@@ -124,6 +136,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     def post(self, request):
         email = request.data.get('email', '').strip()
@@ -259,11 +272,15 @@ class VerifyEmailView(APIView):
             return Response({'error': 'Token is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = User.objects.get(id=token)
-        except (User.DoesNotExist, ValueError):
+            user = User.objects.get(email_verification_token=token)
+        except User.DoesNotExist:
             return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        if user.email_verification_sent_at and (timezone.now() - user.email_verification_sent_at).total_seconds() > 86400:
+            return Response({'error': 'Token has expired. Please request a new verification email.'}, status=status.HTTP_400_BAD_REQUEST)
+
         user.is_email_verified = True
+        user.email_verification_token = ''
         user.save()
         return Response({'detail': 'Email verified successfully.'})
 

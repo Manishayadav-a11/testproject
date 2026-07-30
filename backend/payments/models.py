@@ -1,5 +1,6 @@
 from django.db import models
 from decimal import Decimal
+import uuid
 
 
 class Payment(models.Model):
@@ -19,7 +20,7 @@ class Payment(models.Model):
     booking = models.ForeignKey(
         'bookings.Booking', on_delete=models.CASCADE, related_name='payments'
     )
-    transaction_id = models.CharField(max_length=100, unique=True, blank=True)
+    transaction_id = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
     payment_method = models.CharField(max_length=20, choices=Method.choices)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     platform_commission = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))

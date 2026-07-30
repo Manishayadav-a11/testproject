@@ -15,6 +15,8 @@ class User(AbstractUser):
     profile_image = models.ImageField(upload_to='profiles/', blank=True, null=True)
     is_email_verified = models.BooleanField(default=False)
     is_phone_verified = models.BooleanField(default=False)
+    email_verification_token = models.CharField(max_length=255, blank=True, default='')
+    email_verification_sent_at = models.DateTimeField(null=True, blank=True)
     city = models.CharField(max_length=100, blank=True, default='')
     state = models.CharField(max_length=100, blank=True, default='')
     address = models.TextField(blank=True, default='')

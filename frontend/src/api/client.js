@@ -31,11 +31,14 @@ client.interceptors.response.use(
       
       if (refreshToken) {
         try {
-          const res = await axios.post(`${API_URL}/auth/login/`, {
+          const res = await axios.post(`${API_URL}/auth/token/refresh/`, {
             refresh: refreshToken,
           });
-          const { access } = res.data;
+          const { access, refresh } = res.data;
           localStorage.setItem('access_token', access);
+          if (refresh) {
+            localStorage.setItem('refresh_token', refresh);
+          }
           originalRequest.headers.Authorization = `Bearer ${access}`;
           return client(originalRequest);
         } catch {

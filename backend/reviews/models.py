@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Review(models.Model):
@@ -17,11 +18,22 @@ class Review(models.Model):
     course = models.ForeignKey(
         'courses.Course', on_delete=models.CASCADE, related_name='reviews', null=True, blank=True
     )
-    rating = models.PositiveSmallIntegerField()
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
     comment = models.TextField(blank=True, default='')
-    institute_rating = models.PositiveSmallIntegerField(null=True, blank=True)
-    instructor_rating = models.PositiveSmallIntegerField(null=True, blank=True)
-    course_rating = models.PositiveSmallIntegerField(null=True, blank=True)
+    institute_rating = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    instructor_rating = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    course_rating = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
