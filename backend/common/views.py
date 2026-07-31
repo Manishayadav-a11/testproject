@@ -167,6 +167,7 @@ class CityDetailView(APIView):
         except City.DoesNotExist:
             return Response({'error': 'City not found.'}, status=status.HTTP_404_NOT_FOUND)
         name = request.data.get('name', city.name)
+        print(name,'test')
         state_id = request.data.get('state', city.state_id)
         is_active = request.data.get('is_active', city.is_active)
         if (name != city.name or state_id != city.state_id):
